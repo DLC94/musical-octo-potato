@@ -3,12 +3,15 @@ set -e
 
 FUNC_PATH="$1"
 SOCKET_PATH="${FUNC_PATH}/firecracker.socket"
-KERNEL_PATH="./vmlinux"
-ROOTFS_PATH="./rootfs.ext4"
+KERNEL_PATH="/home/pi/vmlinux-6.1.128"
+ROOTFS_PATH="/home/pi/lambda.ext4"
 CODE_DRIVE_PATH="${FUNC_PATH}/code-drive.ext4"
 LOGFILE="${FUNC_PATH}/vm-log.txt"
+LOGGER="${FUNC_PATH}/logger.log"
 
-[-e "$SOCKET_PATH"] && rm "$SOCKET_PATH"
+touch $LOGGER
+
+[ -e "$SOCKET_PATH" ] && rm "$SOCKET_PATH"
 
 echo "[+] Creating code disk"
 cd "$FUNC_PATH"
@@ -23,8 +26,17 @@ rm code.tar
 cd
 
 echo "[+] Starting Firecracker..."
-./firecracker --api-sock "$SOCKET_PATH" > "$LOGFILE" 2>&1 &
+/home/pi/firecracker --api-sock "$SOCKET_PATH" > "$LOGFILE" 2>&1 &
 sleep 0.2
+
+sudo curl -X PUT --unix-socket "${SOCKET_PATH}" \
+    --data "{
+        \"log_path\": \"${LOGGER}\",
+        \"level\": \"Info\",
+        \"show_level\": true,
+        \"show_log_origin\": true
+    }" \
+    "http://localhost/logger"
 
 sudo curl -s -X PUT "http://localhost/boot-source" \
     --unix-socket "$SOCKET_PATH" \
@@ -32,7 +44,7 @@ sudo curl -s -X PUT "http://localhost/boot-source" \
     -H "Content-Type: application/json" \
     -d "{
         \"kernel_image_path\": \"${KERNEL_PATH}\",
-        \"boot_args\": \"console=ttyS0 reboot=k panic=1 pci=off\"
+        \"boot_args\": \"console=ttyS0 reboot=k panic=1 pci=off init=/init\"
     }"
 
 sudo curl -s -X PUT "http://localhost/drives/rootfs" \
@@ -63,3 +75,4 @@ sudo curl -X PUT --unix-socket "${SOCKET_PATH}" \
 sudo curl -X PUT --unix-socket "${SOCKET_PATH}"     --data "{
         \"action_type\": \"InstanceStart\"
     }"     "http://localhost/actions"
+sleep 0.5
