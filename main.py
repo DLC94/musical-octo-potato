@@ -41,47 +41,40 @@ def test_function(id):
     func_info = functions[id]
     func_path = func_info['path']
 
-    return jsonify({
-        'stdout': 'output',
-        'stderr': 'error',
-        'exit_code': 'code',
-        'logs': ['log1', 'log2', 'log3']
-    })
+    try:
+        result = subprocess.run(
+            ['sudo','./run_microvm.sh', func_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10
+        )
 
-    # try:
-    #     result = subprocess.run(
-    #         ['sudo','./run_microvm.sh', func_path],
-    #         stdout=subprocess.PIPE,
-    #         stderr=subprocess.PIPE,
-    #         timeout=10
-    #     )
+        logs = []
 
-    #     logs = []
+        with open('{}/vm-log.txt'.format(func_path),'r') as f:
+            logs.append(f.readline())
+            logs.append(f.readline())
+            logs.append(f.readline())
 
-    #     with open('{}/vm-log.txt'.format(func_path),'r') as f:
-    #         logs.append(f.readline())
-    #         logs.append(f.readline())
-    #         logs.append(f.readline())
+            capture = False
+            for l in f:
+                l = l.strip()
+                if l == '[+] Booted into microVM':
+                    capture = True
+                if capture == True:
+                    logs.append(l)
+                if l == '[+] Shutting down...':
+                    capture = False
+                    break
 
-    #         capture = False
-    #         for l in f:
-    #             l = l.strip()
-    #             if l == '[+] Booted into microVM':
-    #                 capture = True
-    #             if capture == True:
-    #                 logs.append(l)
-    #             if l == '[+] Shutting down...':
-    #                 capture = False
-    #                 break
-
-    #     return jsonify({
-    #         'stdout': result.stdout.decode(),
-    #         'stderr': result.stderr.decode(),
-    #         'exit_code': result.returncode,
-    #         'logs': logs
-    #     })
-    # except subprocess.TimeoutExpired:
-    #     return jsonify({'error':'Function execution timeout'}), 504
+        return jsonify({
+            'stdout': result.stdout.decode(),
+            'stderr': result.stderr.decode(),
+            'exit_code': result.returncode,
+            'logs': logs
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'error':'Function execution timeout'}), 504
 
 def save_function(request):
     data = json.loads(request.data.decode('utf-8'))
