@@ -7,9 +7,11 @@ KERNEL_PATH="/home/pi/vmlinux-6.1.128"
 ROOTFS_PATH="/home/pi/lambda.ext4"
 CODE_DRIVE_PATH="${FUNC_PATH}/code-drive.ext4"
 LOGFILE="${FUNC_PATH}/vm-log.txt"
-LOGGER="${FUNC_PATH}/logger.log"
+LOGGER="${FUNC_PATH}/logger.file"
+METRICS="${FUNC_PATH}/metric.file"
 
 touch $LOGGER
+touch $METRICS
 
 [ -e "$SOCKET_PATH" ] && rm "$SOCKET_PATH"
 
@@ -28,6 +30,12 @@ cd
 echo "[+] Starting Firecracker..."
 /home/pi/firecracker --api-sock "$SOCKET_PATH" > "$LOGFILE" 2>&1 &
 sleep 0.2
+
+sudo curl -X PUT --unix-socket "${SOCKET_PATH}" \
+    --data "{
+        \"metrics_path\": \"${METRICS}\"
+    }" \
+    "http://localhost/metrics"
 
 sudo curl -X PUT --unix-socket "${SOCKET_PATH}" \
     --data "{

@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  title: Mini Lambda & VM API
+  version: "1.0.0"
+servers:
+  - url: /api/v1
+paths:
+  /vm:
+    post:
+      summary: Create VM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                image: { type: string }
+                memory_mb: { type: integer }
+                cpu_cores: { type: integer }
+      responses:
+        "200":
+          description: VM created
+    get:
+      summary: List VMs
+      responses:
+        "200":
+          description: List of VMs
+  /vm/{vm_id}:
+    get:
+      summary: Get VM
+      parameters:
+        - name: vm_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: VM details }
+    post:
+      summary: Edit VM
+      parameters:
+        - name: vm_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: VM updated }
+    delete:
+      summary: Delete VM
+      parameters:
+        - name: vm_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: VM deleted }
+  /function:
+    post:
+      summary: Create Function
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                runtime: { type: string }
+                memory_mb: { type: integer }
+                cpu_cores: { type: integer }
+                code: { type: string }
+                timeout_sec: { type: integer }
+      responses:
+        "200":
+          description: Function created
+    get:
+      summary: List Functions
+      responses:
+        "200":
+          description: List of functions
+  /function/{function_id}:
+    get:
+      summary: Get Function
+      parameters:
+        - name: function_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Function details }
+    post:
+      summary: Edit Function
+      parameters:
+        - name: function_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Function updated }
+    delete:
+      summary: Delete Function
+      parameters:
+        - name: function_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Function deleted }
+  /function/{function_id}/invoke:
+    post:
+      summary: Run Function
+      parameters:
+        - name: function_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event: { type: object }
+      responses:
+        "200":
+          description: Function executed
